@@ -1,0 +1,13 @@
+{
+  "name": "우리반 공부노트",
+  "short_name": "공부노트",
+  "description": "3학년 시험 자료 & 일정 공유",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#1d4ed8",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
