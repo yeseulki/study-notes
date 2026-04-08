@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
+import { Analytics } from '@vercel/analytics/react'
 
 export const metadata: Metadata = {
   title: '우리반 공부노트',
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 5,          // allow user pinch-zoom
+  maximumScale: 5,
   userScalable: true,
   themeColor: '#1d4ed8',
 }
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             style: { fontFamily: 'Pretendard, sans-serif', fontSize: '15px' },
           }}
         />
+        <Analytics />
       </body>
     </html>
   )
