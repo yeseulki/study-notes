@@ -11,6 +11,9 @@ import {
   Image as ImageIcon, CalendarPlus, StickyNote, Hash,
 } from 'lucide-react'
 
+// ── 관리자 계정 이메일 (Supabase Authentication > Users 에 등록된 계정) ──
+const ADMIN_EMAIL = '2022jungbo01@gmail.com'
+
 // ─── Hashtag helpers ───────────────────────────────────────────────────────
 // Accepts both "#태그" and "태그" formats, comma/space separated
 function parseHashtags(input: string): string[] {
@@ -31,7 +34,7 @@ function parseDbArray(val: any): string[] {
   return []
 }
 
-// ─── Admin password gate ───────────────────────────────────────────────────
+// ─── Admin password gate (Supabase Auth) ───────────────────────────────────
 function PasswordGate({ onSuccess }: { onSuccess: () => void }) {
   const [pw, setPw] = useState('')
   const [loading, setLoading] = useState(false)
@@ -42,16 +45,14 @@ function PasswordGate({ onSuccess }: { onSuccess: () => void }) {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/admin/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: pw }),
+      const { error } = await supabase.auth.signInWithPassword({
+        email: ADMIN_EMAIL,
+        password: pw,
       })
-      if (res.ok) {
-        sessionStorage.setItem('admin_auth', '1')
-        onSuccess()
-      } else {
+      if (error) {
         setError('비밀번호가 틀렸어요.')
+      } else {
+        onSuccess()
       }
     } finally {
       setLoading(false)
@@ -1016,15 +1017,36 @@ function EditMemoModal({ memo, onClose, onSaved }: {
 // ─── Main Admin Page ───────────────────────────────────────────────────────
 export default function AdminPage() {
   const [authed,  setAuthed]  = useState(false)
+  const [checking, setChecking] = useState(true)
   const [refresh, setRefresh] = useState(0)
 
   useEffect(() => {
-    if (sessionStorage.getItem('admin_auth') === '1') setAuthed(true)
+    // Supabase Auth 세션 확인
+    supabase.auth.getSession().then(({ data }) => {
+      setAuthed(!!data.session)
+      setChecking(false)
+    })
+
+    // 로그인/로그아웃 상태가 바뀌면 자동으로 반영
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthed(!!session)
+    })
+
+    return () => {
+      listener.subscription.unsubscribe()
+    }
   }, [])
 
-  if (!authed) return <PasswordGate onSuccess={() => setAuthed(true)} />
-
   function handleDone() { setRefresh(r => r + 1) }
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    setAuthed(false)
+  }
+
+  if (checking) return null // 세션 확인 중 잠깐 빈 화면 (깜빡임 방지)
+
+  if (!authed) return <PasswordGate onSuccess={() => setAuthed(true)} />
 
   return (
     <div className="max-w-2xl mx-auto pb-24">
@@ -1035,7 +1057,7 @@ export default function AdminPage() {
           </Link>
           <span className="font-bold text-gray-900">관리자 페이지</span>
           <button
-            onClick={() => { sessionStorage.removeItem('admin_auth'); setAuthed(false) }}
+            onClick={handleLogout}
             className="text-sm text-red-500 hover:text-red-700"
           >
             로그아웃
